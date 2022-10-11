@@ -15,6 +15,7 @@ android {
         targetSdkVersion rootProject.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -111,7 +112,7 @@ dependencies {
     // Once https://issuetracker.google.com/127986458 is fixed this can be testImplementation
     implementation "androidx.fragment:fragment-testing:$fragmentVersion"
     implementation "androidx.test:core:$androidXTestCoreVersion"
-    implementation "androidx.fragment:fragment:$fragmentVersion"
+    implementation "androidx.fragment:fragment-ktx:$fragmentVersion"
     androidTestImplementation "org.mockito:mockito-core:$mockitoVersion"
     androidTestImplementation "com.linkedin.dexmaker:dexmaker-mockito:$dexMakerVersion"
     androidTestImplementation('org.koin:koin-test:2.0.1') { exclude group: 'org.mockito' }
@@ -122,5 +123,8 @@ dependencies {
     implementation "com.google.android.gms:play-services-location:$playServicesVersion"
     implementation "com.google.android.gms:play-services-maps:$playServicesVersion"
 
+    //Firebase Auth
+    implementation 'com.firebaseui:firebase-ui-auth:7.1.1'
 
+    implementation "androidx.multidex:multidex:2.0.1"
 }
