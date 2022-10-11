@@ -3,37 +3,37 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 import android.Manifest
 import android.app.Activity
-import android.content.Intent
-import android.content.IntentSender
+import android.content.DialogInterface
 import android.content.pm.PackageManager
-import android.content.res.Resources
 import android.os.Bundle
-import android.util.Log
 import android.view.*
+import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
-import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.common.api.ResolvableApiException
+import androidx.lifecycle.Transformations.map
 import com.google.android.gms.location.*
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import com.google.android.material.snackbar.Snackbar
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
-import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 
-class SelectLocationFragment : BaseFragment() {
+
+private const val REQUEST_LOCATION_PERMISSION = 1
+
+class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     //Use Koin to get the view model of the SaveReminder
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
+
+    private lateinit var map: GoogleMap
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -52,6 +52,10 @@ class SelectLocationFragment : BaseFragment() {
 //        TODO: add style to the map
 //        TODO: put a marker to location that the user selected
 
+//      Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        val mapFragment = childFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.getMapAsync(this)
 
 //        TODO: call this function after the user confirms on the selected location
         onLocationSelected()
@@ -65,6 +69,72 @@ class SelectLocationFragment : BaseFragment() {
         //         and navigate back to the previous fragment to save the reminder and add the geofence
     }
 
+
+    override fun onMapReady(googleMap: GoogleMap) {
+        map = googleMap
+
+        enableMyLocation()
+    }
+
+    private fun isPermissionGranted(): Boolean {
+        // 1. Check if permissions are granted, if so, enable the my location layer
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun enableMyLocation() {
+        if (isPermissionGranted()) {
+            map.isMyLocationEnabled = true
+        } else {
+            ActivityCompat.requermissions(
+                requireActivity(),
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ),
+                REQUEST_LOCATION_PERMISSION
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (grantResults.contains(PackageManager.PERMISSION_GRANTED)) {
+                enableMyLocation()
+            } else {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        requireActivity(),
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    )
+                ) {
+                    showPermissionExplanationDialog()
+                }
+            }
+        }
+    }
+
+    private fun showPermissionExplanationDialog() {
+
+        Log.i("TAG", "Show AlertDialog")
+        AlertDialog.Builder(requireContext())
+            .setMessage(R.string.permission_denied_explanation)
+            .setTitle(R.string.location_required_error)
+            .setPositiveButton("OK",
+                DialogInterface.OnClickListener { dialog, _ ->
+                    enableMyLocation()
+                    dialog.dismiss()
+                })
+            .setNegativeButton("CANCEL",
+                DialogInterface.OnClickListener { dialog, _ -> dialog.dismiss() })
+            .create()
+            .show()
+    }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.map_options, menu)
@@ -86,6 +156,5 @@ class SelectLocationFragment : BaseFragment() {
         }
         else -> super.onOptionsItemSelected(item)
     }
-
 
 }
