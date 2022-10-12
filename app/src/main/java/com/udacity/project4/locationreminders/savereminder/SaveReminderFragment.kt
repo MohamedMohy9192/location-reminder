@@ -1,26 +1,28 @@
 package com.udacity.project4.locationreminders.savereminder
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.location.GeofencingClient
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.*
 import com.google.android.material.snackbar.Snackbar
+import com.udacity.project4.BuildConfig
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
@@ -29,6 +31,7 @@ import com.udacity.project4.locationreminders.geofence.GeofenceBroadcastReceiver
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
+import java.util.concurrent.TimeUnit
 
 class SaveReminderFragment : BaseFragment() {
     //Get the view model this time as a single to be shared with the another fragment
@@ -44,7 +47,7 @@ class SaveReminderFragment : BaseFragment() {
 
     // A PendingIntent for the Broadcast Receiver that handles geofence transitions.
     private val geofencePendingIntent: PendingIntent by lazy {
-        val intent = Intent(this, GeofenceBroadcastReceiver::class.java)
+        val intent = Intent(requireContext(), GeofenceBroadcastReceiver::class.java)
         intent.action = ACTION_GEOFENCE_EVENT
         PendingIntent.getBroadcast(requireContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
@@ -101,10 +104,6 @@ class SaveReminderFragment : BaseFragment() {
         }
     }
 
-    /*
-         *  Determines whether the app has the appropriate permissions across Android 10+ and all other
-         *  Android versions.
-         */
     @TargetApi(29)
     private fun foregroundAndBackgroundLocationPermissionApproved(): Boolean {
         // check if the ACCESS_FINE_LOCATION
@@ -162,7 +161,6 @@ class SaveReminderFragment : BaseFragment() {
                 }
             } else {
                 // If the exception is not of type ResolvableApiException, present a snackbar
-                // that alerts the user that location needs to be enabled to play the treasure hunt.
                 Snackbar.make(
                     binding.root,
                     R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
@@ -178,7 +176,120 @@ class SaveReminderFragment : BaseFragment() {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    private fun addGeoFenceForRemainder() {
 
+        val currentGeofenceData = reminderDataItem
+        // Build the geofence using the geofence builder and the information in currentGeofenceData.
+        val geofence = Geofence.Builder()
+            .setRequestId(currentGeofenceData.id)
+            .setCircularRegion(
+                currentGeofenceData.latitude!!,
+                currentGeofenceData.longitude!!,
+                GEOFENCE_RADIUS_IN_METERS
+            )
+            // Set the expiration duration
+            .setExpirationDuration(Geofence.NEVER_EXPIRE)
+            // Set the transition type
+            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+            .build()
+
+        val geofencingRequest = GeofencingRequest.Builder()
+            // Set the initial trigger
+            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            .addGeofence(geofence)
+            .build()
+        geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent).run {
+
+            addOnSuccessListener {
+                _viewModel.validateAndSaveReminder(currentGeofenceData)
+            }
+            addOnFailureListener { exception ->
+                Toast.makeText(
+                    requireContext(), R.string.geofences_not_added,
+                    Toast.LENGTH_SHORT
+                ).show()
+                Log.w(TAG, exception.message.toString())
+            }
+        }
+    }
+
+    /*
+     *  Requests ACCESS_FINE_LOCATION and (on Android 10+ (Q) ACCESS_BACKGROUND_LOCATION.
+     */
+    @TargetApi(29)
+    private fun requestForegroundAndBackgroundLocationPermissions() {
+        // If the permissions have already been granted,
+        // you don't need to ask again, so you can return out of the method.
+        if (foregroundAndBackgroundLocationPermissionApproved())
+            return
+
+        var permissionsArray = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        //  Determines whether you need to check for foreground permissions
+        //  or multiple permissions
+        val resultCode = when {
+            runningQOrLater -> {
+                permissionsArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
+            }
+            else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
+        }
+        requestPermissions(
+            permissionsArray,
+            resultCode
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode != REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE ||
+            requestCode != REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
+        ) {
+            super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+            )
+            return
+        }
+
+        if (
+        // If the grantResults array is empty, then the interaction was interrupted and the permission request was cancelled.
+            grantResults.isEmpty() ||
+            // If the grantResults array's value at the LOCATION_PERMISSION_INDEX has a PERMISSION_DENIED,
+            // it means that the user denied foreground permissions.
+            grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED ||
+            // If the request code equals REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
+            // and the BACKGROUND_LOCATION_PERMISSION_INDEX is denied,
+            // it means that the device is running Q (API 29) or above and that background permissions were denied.
+            (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE &&
+                    grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
+                    PackageManager.PERMISSION_DENIED)
+        ) {
+            // if permissions are not granted, so present a snackbar explaining to the user
+            // that the app needs location permissions
+            Snackbar.make(
+                binding.root,
+                R.string.permission_denied_explanation,
+                Snackbar.LENGTH_INDEFINITE
+            )
+                .setAction(R.string.settings) {
+                    startActivity(Intent().apply {
+                        action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                        data = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    })
+                }.show()
+        } else {
+            // Otherwise, permissions have been granted
+            checkDeviceLocationSettingsAndStartGeofence()
+        }
+    }
     override fun onDestroy() {
         super.onDestroy()
         //make sure to clear the view model after destroy, as it's a single view model.
@@ -191,5 +302,10 @@ class SaveReminderFragment : BaseFragment() {
     }
 }
 
+private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
+private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
 private const val REQUEST_TURN_DEVICE_LOCATION_ON = 29
 private const val TAG = "SaveReminderFragment"
+private const val GEOFENCE_RADIUS_IN_METERS = 100f
+private const val LOCATION_PERMISSION_INDEX = 0
+private const val BACKGROUND_LOCATION_PERMISSION_INDEX = 1
