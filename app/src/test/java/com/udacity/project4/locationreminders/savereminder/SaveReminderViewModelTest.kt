@@ -72,7 +72,7 @@ class SaveReminderViewModelTest {
     fun saveReminder_noTitleError() = mainCoroutineRule.runBlockingTest {
 
         val reminder = ReminderDataItem(
-            title = "Title",
+            title = "",
             description = "Description",
             location = "location",
             latitude = 11.22222,
