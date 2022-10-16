@@ -50,7 +50,7 @@ class RemindersListViewModelTest {
     }
 
     @Test
-    fun loadReminders_loading() {
+    fun check_loading() {
         // Pause dispatcher so we can verify initial values
         mainCoroutineRule.pauseDispatcher()
         // Load the Reminders in the view model
@@ -61,6 +61,13 @@ class RemindersListViewModelTest {
         mainCoroutineRule.resumeDispatcher()
         // Then progress indicator is hidden
         assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(false))
+    }
+
+    @Test
+    fun shouldReturnError() = mainCoroutineRule.runBlockingTest {
+        dataSource.setReturnError(true)
+        viewModel.loadReminders()
+        assertThat(viewModel.showSnackBar.getOrAwaitValue(), `is`("Error getting reminders"))
     }
 
     @Test
@@ -77,12 +84,4 @@ class RemindersListViewModelTest {
         val result = viewModel.remindersList.getOrAwaitValue()
         assertThat(result, `is`(not(emptyList())))
     }
-
-    @Test
-    fun noReminder_returnError() = mainCoroutineRule.runBlockingTest {
-        dataSource.setReturnError(true)
-        viewModel.loadReminders()
-        assertThat(viewModel.showSnackBar.getOrAwaitValue(), `is`("Error getting reminders"))
-    }
-
 }

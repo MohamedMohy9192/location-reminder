@@ -20,8 +20,10 @@ class FakeDataSource(var reminders: MutableList<ReminderDTO>? = mutableListOf())
             )
         }
         reminders?.let { return Result.Success(ArrayList(it)) }
-        return Result.Error("Reminders not found")
+        // No reminders return Success with empty list
+        return Result.Success(emptyList<ReminderDTO>())
     }
+
 
     override suspend fun saveReminder(reminder: ReminderDTO) {
         reminders?.add(reminder)

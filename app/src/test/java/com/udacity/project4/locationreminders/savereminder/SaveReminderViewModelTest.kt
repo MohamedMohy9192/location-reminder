@@ -49,7 +49,7 @@ class SaveReminderViewModelTest {
     }
 
     @Test
-    fun loadReminders_loading() = mainCoroutineRule.runBlockingTest {
+    fun check_loading() = mainCoroutineRule.runBlockingTest {
         val reminder = ReminderDataItem(
             title = "Title",
             description = "Description",
@@ -61,15 +61,15 @@ class SaveReminderViewModelTest {
         mainCoroutineRule.pauseDispatcher()
         viewModel.saveReminder(reminder)
         // Then progress indicator is shown
-        MatcherAssert.assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(true))
+        assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(true))
         // Execute pending coroutines actions
         mainCoroutineRule.resumeDispatcher()
         // Then progress indicator is hidden
-        MatcherAssert.assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(false))
+        assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(false))
     }
 
     @Test
-    fun saveReminder_noTitleError() = mainCoroutineRule.runBlockingTest {
+    fun shouldReturnError() = mainCoroutineRule.runBlockingTest {
 
         val reminder = ReminderDataItem(
             title = "",
@@ -101,6 +101,23 @@ class SaveReminderViewModelTest {
                 ApplicationProvider.getApplicationContext<Context>()
                     .getString(R.string.reminder_saved)
             )
+        )
+    }
+
+    @Test
+    fun shouldReturnError_noLocationError() = mainCoroutineRule.runBlockingTest {
+        val reminder = ReminderDataItem(
+            title = "Title",
+            description = "Description",
+            location = "",
+            latitude = 11.22222,
+            longitude = 512.484848
+        )
+
+        viewModel.validateAndSaveReminder(reminder)
+        assertThat(
+            viewModel.showSnackBarInt.getOrAwaitValue(),
+            `is`(R.string.err_select_location)
         )
     }
 
