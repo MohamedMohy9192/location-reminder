@@ -25,6 +25,7 @@ import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
+import java.util.*
 
 
 private const val REQUEST_LOCATION_PERMISSION = 1
@@ -87,12 +88,14 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         enableMyLocation()
         setPoiClick(googleMap)
         setMapStyle(googleMap)
+        setMapLongClick(googleMap)
     }
 
     private fun setPoiClick(map: GoogleMap) {
         // This click listener places a marker on the map immediately when the user clicks a POI.
         // The click listener also displays an info window that contains the POI name.
         map.setOnPoiClickListener { poi ->
+            // Remove any marker on the map
             map.clear()
             pointOfInterest = poi
             val poiMarker = map.addMarker(
@@ -102,6 +105,34 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             )
             // Show the info window.
             poiMarker?.showInfoWindow()
+        }
+    }
+
+    private fun setMapLongClick(map: GoogleMap) {
+        map.setOnMapLongClickListener { latLng ->
+            // Remove any marker on the map
+            map.clear()
+            // A snippet is additional text that's displayed after the title.
+            val snippet = String.format(
+                Locale.getDefault(),
+                "Lat: %1$.5f, Long: %2$.5f",
+                latLng.latitude,
+                latLng.longitude
+            )
+
+            // Set the title of the marker to Dropped Pin using a R.string.dropped_pin string resource.
+            val locationMarker = map.addMarker(
+                MarkerOptions()
+                    .position(latLng)
+                    .title(getString(R.string.dropped_pin))
+                    .snippet(snippet)
+                    // Use the default marker, but change the color to blue.
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+                // Note that POI markers are still red because you didn't add styling to the onPoiClick() method.
+            )
+
+            locationMarker.showInfoWindow()
+            pointOfInterest = PointOfInterest(latLng, locationMarker.id, locationMarker.title)
         }
     }
 
