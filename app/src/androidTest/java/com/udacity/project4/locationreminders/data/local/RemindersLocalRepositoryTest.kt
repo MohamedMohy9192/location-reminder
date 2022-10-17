@@ -131,4 +131,13 @@ class RemindersLocalRepositoryTest {
         assertThat(loadedList.data, `is`(emptyList()))
         assertThat(loadedList.data.size, `is`(0))
     }
+
+    @Test
+    fun getReminderByID_reminderNotFound() = runBlocking{
+        // arbitrary id
+        val id = "5"
+        val result = remindersLocalRepository.getReminder(id)
+        result as Result.Error
+        assertThat(result.message, `is`("Reminder not found!"))
+    }
 }
