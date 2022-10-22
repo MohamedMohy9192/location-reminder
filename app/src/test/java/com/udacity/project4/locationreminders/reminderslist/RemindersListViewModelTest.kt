@@ -67,7 +67,7 @@ class RemindersListViewModelTest {
     fun shouldReturnError() = mainCoroutineRule.runBlockingTest {
         dataSource.setReturnError(true)
         viewModel.loadReminders()
-        assertThat(viewModel.showSnackBar.getOrAwaitValue(), `is`("Error getting reminders"))
+        assertThat(viewModel.showSnackBar.getOrAwaitValue(), `is`("Test Exception"))
     }
 
     @Test
