@@ -10,7 +10,6 @@ import com.udacity.project4.R
 import com.udacity.project4.locationreminders.data.ReminderDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.dto.Result
-import com.udacity.project4.locationreminders.data.local.RemindersLocalRepository
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 import com.udacity.project4.locationreminders.savereminder.errorMessage
 import com.udacity.project4.utils.sendNotification
@@ -54,7 +53,7 @@ class GeofenceTransitionsJobIntentService : JobIntentService(), CoroutineScope {
         // Check if the geofenceTransition type is ENTER.
         if (geofencingEvent?.geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
             Log.v(TAG, getString(R.string.geofence_entered))
-            sendNotification(geofencingEvent.triggeringGeofences)
+            sendNotification(geofencingEvent.triggeringGeofences as List<Geofence>)
         }
     }
 
