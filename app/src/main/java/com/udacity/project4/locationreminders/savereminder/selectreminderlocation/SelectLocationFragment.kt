@@ -131,8 +131,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
                 // Note that POI markers are still red because you didn't add styling to the onPoiClick() method.
             )
 
-            locationMarker.showInfoWindow()
-            pointOfInterest = PointOfInterest(latLng, locationMarker.id, locationMarker.title)
+            locationMarker?.showInfoWindow()
+            pointOfInterest = PointOfInterest(latLng, locationMarker!!.id, locationMarker.title!!)
         }
     }
 

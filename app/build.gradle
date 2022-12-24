@@ -48,12 +48,12 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:$recyclerViewVersion"
     implementation "androidx.constraintlayout:constraintlayout:$constraintVersion"
 
-    implementation 'com.google.code.gson:gson:2.9.1'
+    implementation 'com.google.code.gson:gson:2.10'
 
     // Architecture Components
     //Navigation dependencies
     implementation 'androidx.appcompat:appcompat:1.5.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.2.0-alpha04'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.0-alpha05'
     kapt "androidx.lifecycle:lifecycle-compiler:$archLifecycleVersion"
 
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$archLifecycleVersion"
@@ -117,11 +117,11 @@ dependencies {
 
     //Maps & Geofencing
     implementation 'com.google.android.gms:play-services-maps:18.1.0'
-    implementation 'com.google.android.gms:play-services-location:20.0.0'
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
 
     //Firebase Auth
     implementation 'com.firebaseui:firebase-ui-auth:8.0.2'
-    implementation platform('com.google.firebase:firebase-bom:30.5.0')
+    implementation platform('com.google.firebase:firebase-bom:31.1.1')
     implementation 'com.google.firebase:firebase-auth'
 
     implementation "androidx.multidex:multidex:2.0.1"
